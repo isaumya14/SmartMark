@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SmartMark
+
+> Save the web, find it instantly.
+
+A personal bookmark manager built with Next.js 14, Supabase, and Tailwind CSS.
+Bookmarks sync across sessions in real-time — no refresh needed.
+
+![SmartMark Dashboard](./preview.png)
+
+## Features
+
+- Google OAuth login
+- Add and delete bookmarks instantly
+- Real-time sync using Supabase Realtime
+- User isolation — each user only sees their own bookmarks
+- Responsive dark UI built with Tailwind CSS
+
+## Tech Stack
+
+| Layer     | Technology              |
+|-----------|-------------------------|
+| Framework | Next.js 14 (App Router) |
+| Database  | Supabase (PostgreSQL)   |
+| Auth      | Supabase Auth (Google)  |
+| Realtime  | Supabase Realtime       |
+| Styling   | Tailwind CSS            |
+| Hosting   | Vercel                  |
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone the repo
 
-```bash
+\`\`\`bash
+git clone https://github.com/YOUR_USERNAME/smartmark.git
+cd smartmark
+npm install
+\`\`\`
+
+### 2. Set up environment variables
+
+Create a `.env.local` file in the root:
+
+\`\`\`env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+\`\`\`
+
+Get these from your Supabase project → **Settings → API**.
+
+### 3. Run locally
+
+\`\`\`bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Database table
 
-## Learn More
+\`\`\`sql
+create table bookmarks (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  title text not null,
+  url text not null,
+  created_at timestamp with time zone default now()
+);
+\`\`\`
 
-To learn more about Next.js, take a look at the following resources:
+### Row Level Security
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+\`\`\`sql
+alter table bookmarks enable row level security;
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+create policy "Users can view own bookmarks"
+  on bookmarks for select using (auth.uid() = user_id);
 
-## Deploy on Vercel
+create policy "Users can insert own bookmarks"
+  on bookmarks for insert with check (auth.uid() = user_id);
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+create policy "Users can delete own bookmarks"
+  on bookmarks for delete using (auth.uid() = user_id);
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+alter publication supabase_realtime add table bookmarks;
+\`\`\`
+
+## Deployment
+
+Deployed on Vercel.
+
+## Author
+
+Built by **Saumya Singh**
